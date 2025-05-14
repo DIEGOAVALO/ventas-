@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario y Ventas</title>
+    <style>
+        :root {
+            --color-primario: #FF6666;
+            --color-fondo: #FFF5F5;
+            --color-texto: #333;
+            --color-exito: #2ECC71;
+            --color-alerta: #E74C3C;
+            --color-info: #3498DB;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--color-fondo);
+            margin: 0;
+            padding: 20px;
+            color: var(--color-texto);
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: var(--color-primario);
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #f1f1f1;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        .tab.active {
+            background: var(--color-primario);
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: var(--color-primario);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--color-primario);
+            color: white;
+        }
+        .acciones button {
+            padding: 5px 10px;
+            margin: 2px;
+            font-size: 14px;
+        }
+        .btn-editar {
+            background-color: var(--color-info);
+        }
+        .btn-eliminar {
+            background-color: var(--color-alerta);
+        }
+        .btn-vender {
+            background-color: var(--color-exito);
+        }
+        .btn-ajustar {
+            background-color: #9B59B6;
+        }
+        .total {
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 15px;
+            text-align: right;
+        }
+        .unidad-selector {
+            display: flex;
+            margin-top: 5px;
+        }
+        .unidad-selector label {
+            display: flex;
+            align-items: center;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        .unidad-selector input[type="radio"] {
+            width: auto;
+            margin-right: 5px;
+        }
+        /* Modal para eliminar/ajustar cantidad */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .modal-actions button {
+            width: 48%;
+            margin: 0;
+        }
+        .modal-cancel {
+            background-color: #95a5a6;
+        }
+        /* Estilos para el login */
+        #login-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .login-title {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--color-primario);
+        }
+        .login-options {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .login-options a {
+            color: var(--color-primario);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .login-options a:hover {
+            text-decoration: underline;
+        }
+        .hidden {
+            display: none;
+        }
+        @media (max-width: 600px) {
+            .tabs {
+                flex-direction: column;
+            }
+            .tab {
+                margin-bottom: 5px;
+            }
+            .acciones {
+                display: flex;
+                flex-direction: column;
+            }
+            .acciones button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de Login -->
+    <div id="login-container">
+        <h1 class="login-title">🔐 Iniciar Sesión</h1>
+        
+        <div id="login-form">
+            <div class="form-group">
+                <label for="login-username">Usuario:</label>
+                <input type="text" id="login-username" placeholder="Ingrese su usuario">
+            </div>
+            
+            <div class="form-group">
+                <label for="login-password">Contraseña:</label>
+                <input type="password" id="login-password" placeholder="Ingrese su contraseña">
+            </div>
+            
+            <button onclick="iniciarSesion()">Ingresar</button>
+            
+            <div class="login-options">
+                ¿No tienes cuenta? <a onclick="mostrarRegistro()">Regístrate aquí</a>
+            </div>
+        </div>
+        
+        <div id="register-form" class="hidden">
+            <div class="form-group">
+                <label for="register-username">Nuevo Usuario:</label>
+                <input type="text" id="register-username" placeholder="Cree un nombre de usuario">
+            </div>
+            
+            <div class="form-group">
+                <label for="register-password">Contraseña:</label>
+                <input type="password" id="register-password" placeholder="Cree una contraseña">
+            </div>
+            
+            <div class="form-group">
+                <label for="register-confirm">Confirmar Contraseña:</label>
+                <input type="password" id="register-confirm" placeholder="Repita la contraseña">
+            </div>
+            
+            <button onclick="registrarUsuario()">Registrarse</button>
+            
+            <div class="login-options">
+                ¿Ya tienes cuenta? <a onclick="mostrarLogin()">Inicia sesión aquí</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sistema de Inventario (oculto inicialmente) -->
+    <div id="app-container" class="hidden">
+        <!-- Modal para eliminar/ajustar cantidad -->
+        <div id="eliminarModal" class="modal">
+            <div class="modal-content">
+                <h3 id="modalTitle">Ajustar cantidad del producto</h3>
+                <div class="form-group">
+                    <label id="cantidadLabel">Cantidad a eliminar:</label>
+                    <input type="number" step="0.01" id="cantidadEliminar" value="1" min="0.01">
+                    <div id="unidadModal" style="margin-top: 5px;"></div>
+                </div>
+                <div class="modal-actions">
+                    <button id="confirmarEliminar" class="btn-eliminar">Confirmar</button>
+                    <button id="cancelarEliminar" class="modal-cancel">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div style="text-align: right; margin-bottom: 10px;">
+                <span id="current-user" style="font-weight: bold;"></span>
+                <button onclick="cerrarSesion()" style="margin-left: 10px; padding: 5px 10px;">Cerrar Sesión</button>
+            </div>
+            
+            <h1>📊 Sistema de Inventario y Ventas</h1>
+            
+            <!-- Pestañas -->
+            <div class="tabs">
+                <div class="tab active" onclick="mostrarSeccion('inventario')">Inventario</div>
+                <div class="tab" onclick="mostrarSeccion('ventas')">Ventas</div>
+                <div class="tab" onclick="mostrarSeccion('reportes')">Reportes</div>
+            </div>
+            
+            <!-- SECCIÓN INVENTARIO -->
+            <div id="inventario" class="tab-content active">
+                <h2>📦 Gestión de Productos</h2>
+                
+                <div class="form-group">
+                    <label for="nombre">Nombre del Producto:</label>
+                    <input type="text" id="nombre" placeholder="Ej: Arroz">
+                </div>
+                
+                <div class="form-group">
+                    <label for="cantidad">Cantidad:</label>
+                    <input type="number" id="cantidad" placeholder="Ej: 50" step="0.01">
+                    <div class="unidad-selector">
+                        <label><input type="radio" name="unidad" value="unidades" checked> Unidades</label>
+                        <label><input type="radio" name="unidad" value="kilos"> Kilos</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="precio">Precio Unitario:</label>
+                    <input type="number" step="0.01" id="precio" placeholder="Ej: 2.99">
+                </div>
+                
+                <div class="form-group">
+                    <label for="categoria">Categoría:</label>
+                    <select id="categoria">
+                        <option value="Alimentos">Alimentos</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Limpieza">Limpieza</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+                
+                <button onclick="agregarProducto()">➕ Agregar Producto</button>
+                
+                <h2>🛒 Inventario Actual</h2>
+                <table id="tabla-inventario">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Categoría</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-productos">
+                        <!-- Los productos se cargarán aquí -->
+                    </tbody>
+                </table>
+                <div class="total" id="valor-total">
+                    Valor Total: $0.00
+                </div>
+            </div>
+            
+            <!-- SECCIÓN VENTAS -->
+            <div id="ventas" class="tab-content">
+                <h2>💰 Registrar Venta</h2>
+                
+                <div class="form-group">
+                    <label for="producto-venta">Producto:</label>
+                    <select id="producto-venta">
+                        <!-- Se llena automáticamente -->
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cantidad-venta">Cantidad:</label>
+                    <input type="number" id="cantidad-venta" placeholder="Ej: 5" step="0.01">
+                    <div id="unidad-venta" style="margin-top: 5px; font-style: italic;"></div>
+                </div>
+                
+                <button onclick="registrarVenta()">💳 Registrar Venta</button>
+                
+                <h2>📜 Historial de Ventas</h2>
+                <table id="tabla-ventas">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-ventas">
+                        <!-- Las ventas se cargarán aquí -->
+                    </tbody>
+                </table>
+                <div class="total" id="total-ventas">
+                    Total de Ventas: $0.00
+                </div>
+            </div>
+            
+            <!-- SECCIÓN REPORTES -->
+            <div id="reportes" class="tab-content">
+                <h2>📊 Reporte de Ventas</h2>
+                
+                <div class="form-group">
+                    <label for="filtro-categoria">Filtrar por categoría:</label>
+                    <select id="filtro-categoria">
+                        <option value="Todas">Todas</option>
+                        <option value="Alimentos">Alimentos</option>
+                        <option value="Bebidas">Bebidas</option>
+                        <option value="Limpieza">Limpieza</option>
+                    </select>
+                </div>
+                
+                <button onclick="generarReporte()">🔍 Generar Reporte</button>
+                
+                <table id="tabla-reportes">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad Vendida</th>
+                            <th>Total Vendido</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-reportes">
+                        <!-- Los reportes se cargarán aquí -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base de datos local para usuarios
+        let usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+        
+        // Base de datos local para inventario y ventas (por usuario)
+        let inventario = [];
+        let ventas = [];
+        let productoSeleccionado = null;
+        let usuarioActual = null;
+
+        // Mostrar formulario de registro
+        function mostrarRegistro() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+            document.getElementById('register-username').focus();
+        }
+
+        // Mostrar formulario de login
+        function mostrarLogin() {
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('login-username').focus();
+        }
+
+        // Registrar un nuevo usuario
+        function registrarUsuario() {
+            const username = document.getElementById('register-username').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+            
+            if (!username || !password) {
+                alert('Por favor complete todos los campos');
+                return;
+            }
+            
+            if (password !== confirm) {
+                alert('Las contraseñas no coinciden');
+                return;
+            }
+            
+            // Verificar si el usuario ya existe
+            if (usuarios.some(u => u.username === username)) {
+                alert('El nombre de usuario ya está en uso');
+                return;
+            }
+            
+            // Registrar el nuevo usuario
+            usuarios.push({
+                username,
+                password: btoa(password) // Encriptación básica (no seguro para producción)
+            });
+            
+            localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            
+            alert('Usuario registrado con éxito. Ahora puede iniciar sesión.');
+            mostrarLogin();
+            
+            // Limpiar campos
+            document.getElementById('register-username').value = '';
+            document.getElementById('register-password').value = '';
+            document.getElementById('register-confirm').value = '';
+        }
+
+        // Iniciar sesión
+        function iniciarSesion() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            if (!username || !password) {
+                alert('Por favor complete todos los campos');
+                return;
+            }
+            
+            // Buscar usuario
+            const usuario = usuarios.find(u => u.username === username && atob(u.password) === password);
+            
+            if (usuario) {
+                usuarioActual = username;
+                
+                // Cargar datos del usuario
+                cargarDatosUsuario();
+                
+                // Mostrar aplicación
+                document.getElementById('login-container').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                document.getElementById('current-user').textContent = `Usuario: ${username}`;
+                
+                // Limpiar campos de login
+                document.getElementById('login-username').value = '';
+                document.getElementById('login-password').value = '';
+            } else {
+                alert('Usuario o contraseña incorrectos');
+            }
+        }
+
+        // Cerrar sesión
+        function cerrarSesion() {
+            // Guardar datos del usuario antes de cerrar sesión
+            guardarDatosUsuario();
+            
+            usuarioActual = null;
+            inventario = [];
+            ventas = [];
+            
+            // Mostrar login
+            document.getElementById('app-container').classList.add('hidden');
+            document.getElementById('login-container').classList.remove('hidden');
+            mostrarLogin();
+        }
+
+        // Cargar datos del usuario desde localStorage
+        function cargarDatosUsuario() {
+            if (!usuarioActual) return;
+            
+            const userData = JSON.parse(localStorage.getItem(`user_${usuarioActual}`)) || {};
+            inventario = userData.inventario || [];
+            ventas = userData.ventas || [];
+            
+            actualizarInventario();
+            actualizarVentas();
+        }
+
+        // Guardar datos del usuario en localStorage
+        function guardarDatosUsuario() {
+            if (!usuarioActual) return;
+            
+            localStorage.setItem(`user_${usuarioActual}`, JSON.stringify({
+                inventario,
+                ventas
+            }));
+        }
+
+        // Mostrar sección activa
+        function mostrarSeccion(seccion) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(seccion).classList.add('active');
+            document.querySelector(`.tab[onclick="mostrarSeccion('${seccion}')"]`).classList.add('active');
+        }
+        
+        // Actualizar inventario en la tabla
+        function actualizarInventario() {
+            const tbody = document.getElementById('lista-productos');
+            tbody.innerHTML = '';
+            
+            let valorTotal = 0;
+            
+            inventario.forEach((producto, index) => {
+                const tr = document.createElement('tr');
+                const valorProducto = producto.cantidad * producto.precio;
+                valorTotal += valorProducto;
+                
+                // Mostrar la cantidad con su unidad correspondiente
+                const cantidadMostrar = producto.unidad === 'kilos' ? 
+                    `${producto.cantidad} kg` : 
+                    `${producto.cantidad} ${producto.cantidad === 1 ? 'unidad' : 'unidades'}`;
+                
+                tr.innerHTML = `
+                    <td>${producto.nombre}</td>
+                    <td>${cantidadMostrar}</td>
+                    <td>$${producto.precio.toFixed(2)}</td>
+                    <td>${producto.categoria}</td>
+                    <td class="acciones">
+                        <button class="btn-editar" onclick="editarProducto(${index})">✏️ Editar</button>
+                        <button class="btn-eliminar" onclick="mostrarModalEliminar(${index})">🗑️ Eliminar</button>
+                        <button class="btn-vender" onclick="prepararVenta(${index})">💰 Vender</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('valor-total').textContent = `Valor Total: $${valorTotal.toFixed(2)}`;
+            guardarDatosUsuario();
+            actualizarSelectProductos();
+        }
+        
+        // Mostrar modal para eliminar/ajustar cantidad
+        function mostrarModalEliminar(index) {
+            productoSeleccionado = index;
+            const producto = inventario[index];
+            
+            document.getElementById('modalTitle').textContent = `Ajustar cantidad de ${producto.nombre}`;
+            document.getElementById('cantidadLabel').textContent = `Cantidad a eliminar (${producto.unidad === 'kilos' ? 'kg' : 'unidades'}):`;
+            document.getElementById('unidadModal').textContent = `Disponible: ${producto.cantidad} ${producto.unidad === 'kilos' ? 'kg' : 'unidades'}`;
+            document.getElementById('cantidadEliminar').value = '1';
+            document.getElementById('cantidadEliminar').max = producto.cantidad;
+            document.getElementById('cantidadEliminar').step = producto.unidad === 'kilos' ? '0.01' : '1';
+            
+            document.getElementById('eliminarModal').style.display = 'flex';
+            document.getElementById('cantidadEliminar').focus();
+        }
+        
+        // Confirmar eliminación/ajuste de cantidad
+        function confirmarEliminacion() {
+            const cantidad = parseFloat(document.getElementById('cantidadEliminar').value);
+            const producto = inventario[productoSeleccionado];
+            
+            if (isNaN(cantidad) || cantidad <= 0) {
+                alert('Por favor ingrese una cantidad válida');
+                return;
+            }
+            
+            if (cantidad > producto.cantidad) {
+                alert(`No puede eliminar más de lo que existe en inventario (${producto.cantidad} ${producto.unidad === 'kilos' ? 'kg' : 'unidades'})`);
+                return;
+            }
+            
+            // Eliminar completamente si es toda la cantidad o ajustar
+            if (cantidad === producto.cantidad) {
+                inventario.splice(productoSeleccionado, 1);
+                alert(`✅ Producto "${producto.nombre}" eliminado completamente del inventario`);
+            } else {
+                producto.cantidad -= cantidad;
+                alert(`✅ Se eliminaron ${cantidad} ${producto.unidad === 'kilos' ? 'kg' : 'unidades'} de "${producto.nombre}"`);
+            }
+            
+            cerrarModal();
+            actualizarInventario();
+        }
+        
+        // Cerrar modal
+        function cerrarModal() {
+            document.getElementById('eliminarModal').style.display = 'none';
+            productoSeleccionado = null;
+        }
+        
+        // Actualizar lista de productos para ventas
+        function actualizarSelectProductos() {
+            const select = document.getElementById('producto-venta');
+            select.innerHTML = '';
+            
+            inventario.forEach((producto, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                
+                // Mostrar información de unidad en el select
+                const unidadInfo = producto.unidad === 'kilos' ? 'kg' : 'unid';
+                option.textContent = `${producto.nombre} (Stock: ${producto.cantidad} ${unidadInfo}) - $${producto.precio.toFixed(2)}`;
+                select.appendChild(option);
+            });
+        }
+        
+        // Agregar un nuevo producto
+        function agregarProducto() {
+            const nombre = document.getElementById('nombre').value.trim();
+            const cantidad = parseFloat(document.getElementById('cantidad').value);
+            const precio = parseFloat(document.getElementById('precio').value);
+            const categoria = document.getElementById('categoria').value;
+            const unidad = document.querySelector('input[name="unidad"]:checked').value;
+            
+            if (nombre && !isNaN(cantidad) && cantidad > 0 && !isNaN(precio) && precio > 0) {
+                inventario.push({
+                    nombre,
+                    cantidad,
+                    precio,
+                    categoria,
+                    unidad,
+                    fecha: new Date().toLocaleDateString()
+                });
+                
+                actualizarInventario();
+                
+                // Limpiar campos
+                document.getElementById('nombre').value = '';
+                document.getElementById('cantidad').value = '';
+                document.getElementById('precio').value = '';
+                
+                alert('✅ Producto agregado correctamente');
+            } else {
+                alert('❌ Por favor complete todos los campos con valores válidos');
+            }
+        }
+        
+        // Editar producto
+        function editarProducto(index) {
+            const producto = inventario[index];
+            
+            document.getElementById('nombre').value = producto.nombre;
+            document.getElementById('cantidad').value = producto.cantidad;
+            document.getElementById('precio').value = producto.precio;
+            document.getElementById('categoria').value = producto.categoria;
+            
+            // Seleccionar la unidad correcta
+            document.querySelector(`input[name="unidad"][value="${producto.unidad}"]`).checked = true;
+            
+            // Eliminar el producto para reemplazarlo
+            inventario.splice(index, 1);
+            actualizarInventario();
+        }
+        
+        // Preparar venta (seleccionar producto)
+        function prepararVenta(index) {
+            document.getElementById('producto-venta').value = index;
+            mostrarSeccion('ventas');
+            
+            // Actualizar la unidad de medida para la venta
+            const producto = inventario[index];
+            const unidadTexto = producto.unidad === 'kilos' ? 'kg' : 'unidades';
+            document.getElementById('unidad-venta').textContent = `En ${unidadTexto}`;
+            
+            // Configurar el step según la unidad
+            document.getElementById('cantidad-venta').step = producto.unidad === 'kilos' ? '0.01' : '1';
+            
+            document.getElementById('cantidad-venta').focus();
+        }
+        
+        // Registrar una venta
+        function registrarVenta() {
+            const productoIndex = parseInt(document.getElementById('producto-venta').value);
+            const cantidad = parseFloat(document.getElementById('cantidad-venta').value);
+            
+            if (isNaN(productoIndex) || isNaN(cantidad) || cantidad <= 0) {
+                alert('❌ Seleccione un producto y cantidad válida');
+                return;
+            }
+            
+            const producto = inventario[productoIndex];
+            
+            if (!producto) {
+                alert('❌ Producto no encontrado');
+                return;
+            }
+            
+            if (cantidad > producto.cantidad) {
+                const unidad = producto.unidad === 'kilos' ? 'kg' : 'unidades';
+                alert(`❌ No hay suficiente stock (Disponible: ${producto.cantidad} ${unidad})`);
+                return;
+            }
+            
+            // Registrar la venta
+            const totalVenta = cantidad * producto.precio;
+            ventas.push({
+                fecha: new Date().toLocaleString(),
+                producto: producto.nombre,
+                cantidad,
+                unidad: producto.unidad,
+                total: totalVenta,
+                categoria: producto.categoria
+            });
+            
+            // Actualizar stock
+            producto.cantidad -= cantidad;
+            
+            // Si el stock llega a 0, eliminar producto
+            if (producto.cantidad <= 0) {
+                inventario.splice(productoIndex, 1);
+            }
+            
+            // Actualizar la interfaz
+            actualizarInventario();
+            actualizarVentas();
+            
+            // Limpiar campo de cantidad
+            document.getElementById('cantidad-venta').value = '';
+            
+            // Mostrar confirmación con unidad
+            const unidad = producto.unidad === 'kilos' ? 'kg' : 'unidades';
+            alert(`✅ Venta registrada\n${cantidad} ${unidad} de ${producto.nombre}\nTotal: $${totalVenta.toFixed(2)}`);
+        }
+        
+        // Actualizar lista de ventas
+        function actualizarVentas() {
+            const tbody = document.getElementById('lista-ventas');
+            tbody.innerHTML = '';
+            
+            let totalVentas = 0;
+            
+            // Ordenar ventas por fecha (más recientes primero)
+            ventas.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+            
+            ventas.forEach(venta => {
+                const tr = document.createElement('tr');
+                totalVentas += venta.total;
+                
+                // Mostrar la cantidad con su unidad correspondiente
+                const cantidadMostrar = venta.unidad === 'kilos' ? 
+                    `${venta.cantidad} kg` : 
+                    `${venta.cantidad} ${venta.cantidad === 1 ? 'unidad' : 'unidades'}`;
+                
+                tr.innerHTML = `
+                    <td>${venta.fecha}</td>
+                    <td>${venta.producto}</td>
+                    <td>${cantidadMostrar}</td>
+                    <td>$${venta.total.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('total-ventas').textContent = `Total de Ventas: $${totalVentas.toFixed(2)}`;
+            guardarDatosUsuario();
+        }
+        
+        // Generar reporte de ventas
+        function generarReporte() {
+            const categoria = document.getElementById('filtro-categoria').value;
+            const tbody = document.getElementById('lista-reportes');
+            tbody.innerHTML = '';
+            
+            let productosVendidos = {};
+            
+            ventas.forEach(venta => {
+                if (categoria === 'Todas' || venta.categoria === categoria) {
+                    if (!productosVendidos[venta.producto]) {
+                        productosVendidos[venta.producto] = {
+                            cantidad: 0,
+                            total: 0,
+                            unidad: venta.unidad
+                        };
+                    }
+                    
+                    productosVendidos[venta.producto].cantidad += venta.cantidad;
+                    productosVendidos[venta.producto].total += venta.total;
+                }
+            });
+            
+            // Mostrar resultados ordenados por total vendido (mayor a menor)
+            Object.entries(productosVendidos)
+                .sort((a, b) => b[1].total - a[1].total)
+                .forEach(([producto, datos]) => {
+                    const tr = document.createElement('tr');
+                    
+                    // Mostrar la cantidad con su unidad correspondiente
+                    const cantidadMostrar = datos.unidad === 'kilos' ? 
+                        `${datos.cantidad} kg` : 
+                        `${datos.cantidad} ${datos.cantidad === 1 ? 'unidad' : 'unidades'}`;
+                    
+                    tr.innerHTML = `
+                        <td>${producto}</td>
+                        <td>${cantidadMostrar}</td>
+                        <td>$${datos.total.toFixed(2)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+        }
+        
+        // Event listeners para el modal
+        document.getElementById('confirmarEliminar').addEventListener('click', confirmarEliminacion);
+        document.getElementById('cancelarEliminar').addEventListener('click', cerrarModal);
+        
+        // Cerrar modal al hacer clic fuera del contenido
+        document.getElementById('eliminarModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModal();
+            }
+        });
+        
+        // Inicializar la aplicación
+        window.onload = function() {
+            // Verificar si hay usuarios registrados
+            if (usuarios.length === 0) {
+                // Crear un usuario admin por defecto si no hay usuarios
+                usuarios.push({
+                    username: 'admin',
+                    password: btoa('admin123')
+                });
+                localStorage.setItem('usuarios', JSON.stringify(usuarios));
+            }
+            
+            mostrarLogin();
+        };
+    </script>
+</body>
+</html>
